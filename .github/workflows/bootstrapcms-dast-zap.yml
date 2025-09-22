@@ -1,0 +1,57 @@
+name: DAST - OWASP ZAP
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  zap:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v3
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_mysql
+
+      - name: Install deps
+        run: composer install --no-interaction
+
+      - name: Prepare .env for tests
+        run: |
+          cp .env.example .env || true
+          php artisan key:generate || true
+          # set DB connection to mysql service (if needed)
+          php artisan migrate --force || true
+
+      - name: Start php artisan serve
+        run: nohup php artisan serve --port=8080 > /tmp/serve.log 2>&1 &
+      
+      - name: Wait for app to be available
+        run: |
+          for i in {1..30}; do
+            curl -sSf http://127.0.0.1:8080 && break || sleep 2
+          done
+
+      - name: Run ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.4.0
+        with:
+          target: 'http://127.0.0.1:8080'
+          rules_file_name: 'zap_rules/rules.conf'
