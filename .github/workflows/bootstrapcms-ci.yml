@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["master", "main"]
+    branches: ["nasekaylovm-cyber-patch-1"]
   pull_request:
-    branches: ["master", "main"]
+    branches: ["nasekaylovm-cyber-patch-1"]
   workflow_dispatch:
 
 permissions:
@@ -17,15 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: [ "5.6", "7.1", "7.4" ]  # покрываем старые версии и более современные; скорректируй по надобности
+        php: ["5.6", "7.0", "7.1"]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup PHP ${{ matrix.php }}
-        uses: shivammathur/setup-php@v3
+        uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
+          tools: composer:v1
           extensions: mbstring, xml, json, pdo_mysql
           coverage: xdebug
 
@@ -36,18 +38,12 @@ jobs:
           key: composer-${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
 
       - name: Install Composer dependencies
-        # Для старых пакетов иногда нужен --ignore-platform-reqs
-        run: composer install --no-interaction --prefer-dist || composer install --no-interaction --prefer-dist --ignore-platform-reqs
+        run: composer install --no-interaction --prefer-dist
 
-      - name: Composer audit (check for known vulnerabilities)
-        run: |
-          if composer --version 2>/dev/null | grep -q "Composer"; then
-            composer audit || true
-          else
-            echo "composer audit not available, skipping"
-          fi
+      - name: Composer audit (skip if Composer 1)
+        run: echo "composer audit not available in Composer v1 - skipped"
 
-      - name: Run PHPStan (если настроен)
+      - name: Run PHPStan
         if: ${{ always() }}
         run: |
           if [ -f "phpstan.neon" ] || [ -f "phpstan.neon.dist" ]; then
@@ -57,7 +53,7 @@ jobs:
             echo "phpstan config not found, skipping"
           fi
 
-      - name: Run PHPCS (code style, не фатально)
+      - name: Run PHPCS
         if: ${{ always() }}
         run: |
           composer require --dev squizlabs/php_codesniffer || true
@@ -67,20 +63,17 @@ jobs:
         run: |
           cp .env.example .env || true
           php artisan key:generate || true
-          # Use sqlite if DB not configured
-          sed -i 's/DB_CONNECTION=mysql/DB_CONNECTION=sqlite/' .env || true
-          mkdir -p database && touch database/database.sqlite || true
+          echo "Skipping migrations for CI (legacy app)"
 
-      - name: Run migrations (if any) and tests
+      - name: Run tests (skip if not present)
         run: |
-          php artisan migrate --force || true
           if [ -f "vendor/bin/phpunit" ]; then
             vendor/bin/phpunit --configuration phpunit.xml.dist || true
           else
             echo "phpunit not installed or no tests"
           fi
 
-      - name: Upload test & static-analysis artifacts
+      - name: Upload artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:

@@ -2,28 +2,34 @@ name: "CodeQL"
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["nasekaylovm-cyber-patch-1 "]
   pull_request:
-    branches: ["main", "master"]
+    branches: ["nasekaylovm-cyber-patch-1 "]
   schedule:
-    - cron: '0 4 * * 0'  # еженедельно (UTC)
+    - cron: '0 4 * * 0'
   workflow_dispatch:
 
 jobs:
-  codeql:
+  analyze:
     name: Analyze (CodeQL)
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
-          languages: php
+          
+          languages: javascript
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+        uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v2
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
