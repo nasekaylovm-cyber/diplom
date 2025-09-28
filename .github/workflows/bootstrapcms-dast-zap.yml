@@ -1,0 +1,70 @@
+name: bootstrapcms DAST-OWASP ZAP
+
+on:
+  push:
+    branches: ["nasekaylovm-cyber-patch-1 "]
+  pull_request:
+    branches: ["nasekaylovm-cyber-patch-1 "]
+  workflow_dispatch:
+
+jobs:
+  # сначала CI (чтобы убедиться что проект собирается)
+  ci:
+    uses: ./.github/workflows/bootstrapcms-ci.yml   # переиспользуем bootstrapcms-CI как reusable workflow
+    secrets: inherit
+
+  # OWASP ZAP
+  dast:
+    needs: ci            # запускается только если CI прошёл успешно
+    runs-on: ubuntu-20.04
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Ставим старый PHP и Composer v1 для Laravel 5.1
+      - name: Setup PHP 5.6
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '5.6'
+          tools: composer:v1
+          coverage: none
+          extensions: mbstring, pdo_mysql
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-plugins --no-scripts
+
+      - name: Prepare .env and DB
+        run: |
+          cp .env.example .env || true
+          php artisan key:generate || true
+          php artisan migrate --force || true
+
+      - name: Start application
+        run: nohup php artisan serve --host=127.0.0.1 --port=8080 > /tmp/serve.log 2>&1 &
+
+      - name: Wait for app
+        run: |
+          for i in {1..30}; do
+            curl -sSf http://127.0.0.1:8080 && break || sleep 2
+          done
+
+      - name: Run ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'http://127.0.0.1:8080'
+          rules_file_name: 'zap_rules/rules.conf'
