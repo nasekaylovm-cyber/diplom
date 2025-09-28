@@ -1,4 +1,4 @@
-name: CI
+name:  boodstrapcms_CI
 
 on:
   push:
