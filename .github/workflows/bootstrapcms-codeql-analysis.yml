@@ -24,66 +24,43 @@ jobs:
   php-static:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.4
+          tools: composer:v2
+          coverage: none
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: 7.4
-        tools: composer:v2
-        coverage: none
+      - name: Clear Composer Cache
+        run: composer clear-cache
 
-    - name: Clear Composer Cache
-      run: composer clear-cache
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
 
-    - name: Remove problematic files
-      run: |
-        rm -rf vendor
-        rm -f composer.lock
-        rm -rf bootstrap/cache
+      - name: Dump autoload
+        run: composer dump-autoload
+      
+      - name: Verify autoload file exists
+        run: |
+          if [ ! -f vendor/autoload.php ]; then
+            echo "Autoload file not found!"
+            exit 1
+          fi
 
-    - name: Install dependencies
-      run: |
-        composer install \
-        --no-interaction \
-        --no-progress
+      - name: Clear Laravel cache
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
 
-    - name: Dump autoload
-      run: composer dump-autoload
+      - name: Run Psalm
+        run: ./vendor/bin/psalm --show-info=false --output-format=github
 
-    - name: Verify autoload file exists
-      run: |
-        if ! -f vendor/autoload.php ; then
-          echo "Autoload file not found!"
-          exit 1
-        fi
-
-    - name: Disable pre-update-cmd scripts temporarily
-      run: |
-        sed -i 's/"pre-update-cmd"/"disabled-pre-update-cmd"/g' composer.json
-
-    - name: Reinstall dependencies after script disable
-      run: |
-        composer install \
-        --no-interaction \
-        --no-progress
-
-    - name: Restore original composer.json
-      run: |
-        sed -i 's/"disabled-pre-update-cmd"/"pre-update-cmd"/g' composer.json
-
-    - name: Clear Laravel cache
-      run: |
-        php artisan config:clear
-        php artisan cache:clear
-        php artisan route:clear
-        php artisan view:clear
-
-    - name: Run Psalm
-      run: ./vendor/bin/psalm --show-info=false --output-format=github
-
-    - name: Upload Psalm report (optional)
-      uses: actions/upload-artifact@v4
-      with:
-        name: psalm-report
-        path: psalm.xml
+      - name: Upload Psalm report (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: psalm-report
+          path: psalm.xml
