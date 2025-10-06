@@ -25,7 +25,7 @@ jobs:
       run: |
         docker build \
         --build-arg COMPOSER_ALLOW_PLUGINS="true" \
-        -t bootstrap-cms:latest .
+        -t bootstrap-cms:latest.
 
     - name: Run security scan
       run: |
@@ -78,7 +78,7 @@ jobs:
         sarif_file: security-report.sarif
 
     - name: Upload Code Quality Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2 # Используем версию v2 вместо v3
       with:
         name: code-quality-report
         path: code-quality.json
@@ -104,4 +104,5 @@ jobs:
 
     - name: Contact configuration
       run: |
-        docker exec test-cms sh -c "echo 'CONTACT_
+        docker exec
+        
