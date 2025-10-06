@@ -45,18 +45,32 @@ jobs:
     - name: Install dependencies
       run: |
         composer install \
-          --no-interaction \
-          --no-progress
+        --no-interaction \
+        --no-progress
 
     - name: Dump autoload
       run: composer dump-autoload
 
     - name: Verify autoload file exists
       run: |
-        if [ ! -f vendor/autoload.php ]; then
+        if ! -f vendor/autoload.php ; then
           echo "Autoload file not found!"
           exit 1
         fi
+
+    - name: Disable pre-update-cmd scripts temporarily
+      run: |
+        sed -i 's/"pre-update-cmd"/"disabled-pre-update-cmd"/g' composer.json
+
+    - name: Reinstall dependencies after script disable
+      run: |
+        composer install \
+        --no-interaction \
+        --no-progress
+
+    - name: Restore original composer.json
+      run: |
+        sed -i 's/"disabled-pre-update-cmd"/"pre-update-cmd"/g' composer.json
 
     - name: Clear Laravel cache
       run: |
