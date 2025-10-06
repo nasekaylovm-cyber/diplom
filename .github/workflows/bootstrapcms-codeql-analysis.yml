@@ -33,24 +33,25 @@ jobs:
         tools: composer:v2
         coverage: none
 
+    - name: Clear Composer Cache
+      run: composer clear-cache
+
     - name: Remove problematic files
       run: |
         rm -rf vendor
         rm -f composer.lock
-        rm -f composer.json.backup
-
-    - name: Clear Composer cache
-      run: composer clear-cache
 
     - name: Install dependencies
       run: |
         composer install \
           --no-interaction \
-          --no-progress \
-          --no-suggest
+          --no-progress
 
     - name: Dump autoload
       run: composer dump-autoload
+
+    - name: Clear Laravel cache
+      run: php artisan clear-compiled
 
     - name: Run Psalm
       run: ./vendor/bin/psalm --show-info=false --output-format=github
