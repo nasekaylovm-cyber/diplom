@@ -31,14 +31,18 @@ jobs:
         with:
           php-version: 7.4
           tools: composer
-          
-      - name: Remove problematic composer.lock
-        run: rm -f composer.lock    
-      - name: Install deps
-        run: composer install --no-progress --no-suggest
-        
+
+      - name: Install dependencies (no scripts)
+        run: composer install --no-scripts --no-dev --no-progress
+      
+      - name: Run artisan commands (if needed)
+        run: |
+          php artisan clear-compiled
+          php artisan optimize
+        if: always()
+            
       - name: Run Psalm
-        run: ./vendor/bin/psalm --show-info=false --output-format=github
+        run: ./vendor/bin/psalm --show-info=false
       
       - name: Upload Psalm report (optional)
         uses: actions/upload-artifact@v4
