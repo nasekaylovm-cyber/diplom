@@ -15,10 +15,27 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Fix Composer plugin issue
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 7
+        extensions: mbstring, xml, zip, gd, mysql, pdo_mysql
+        tools: composer
+
+    - name: Fix Composer issues
       run: |
        
         composer config --no-plugins allow-plugins.kylekatarnls/update-helper true
+        composer config --no-plugins allow-plugins.mxschmidt/assetic-extra true
+
+    - name: Install dependencies
+      run: |
+       
+        composer install --no-dev -o
+
+    - name: Create necessary directories
+      run: |
+        mkdir -p database storage/framework/views storage/framework/sessions storage/framework/cache bootstrap/cache
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -29,7 +46,6 @@ jobs:
         
     - name: Run security scan on Docker image
       run: |
-       
         if ! command -v trivy &> /dev/null; then
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
         fi
