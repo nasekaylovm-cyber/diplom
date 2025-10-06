@@ -59,31 +59,8 @@ jobs:
           php artisan route:clear
           php artisan view:clear
 
-      - name: Install Psalm
-        run: composer require --dev vimeo/psalm --no-interaction --no-progress
+      - name: Install PHPStan
+        run: composer require --dev phpstan/phpstan --no-interaction --no-progress
       
-      - name: Verify Psalm installation
-        run: |
-          if [ -f vendor/bin/psalm ]; then
-            echo "Psalm found successfully"
-            ls -la vendor/bin/psalm
-          else
-            echo "Psalm not found in vendor/bin/"
-            echo "Checking vendor/bin directory:"
-            ls -la vendor/bin/ || echo "vendor/bin directory not found"
-            echo "Checking vendor directory:"
-            ls -la vendor/ || echo "vendor directory not found"
-            exit 1
-          fi
-      
-      - name: Initialize Psalm config
-        run: ./vendor/bin/psalm --init || echo "Psalm config already exists or initialization failed"
-      
-      - name: Run Psalm
-        run: ./vendor/bin/psalm --show-info=false --output-format=github
-      
-      - name: Upload Psalm report (optional)
-        uses: actions/upload-artifact@v4
-        with:
-          name: psalm-report
-          path: psalm-report.xml
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse --error-format=github
