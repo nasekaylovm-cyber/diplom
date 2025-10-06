@@ -15,27 +15,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: 7
-        extensions: mbstring, xml, zip, gd, mysql, pdo_mysql
-        tools: composer
-
-    - name: Fix Composer issues
+    - name: Create database directory
       run: |
-       
-        composer config --no-plugins allow-plugins.kylekatarnls/update-helper true
-        composer config --no-plugins allow-plugins.mxschmidt/assetic-extra true
-
-    - name: Install dependencies
-      run: |
-       
-        composer install --no-dev -o
-
-    - name: Create necessary directories
-      run: |
-        mkdir -p database storage/framework/views storage/framework/sessions storage/framework/cache bootstrap/cache
+        mkdir -p database
+        touch database/.gitkeep
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
