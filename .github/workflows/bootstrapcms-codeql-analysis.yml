@@ -59,8 +59,14 @@ jobs:
           php artisan route:clear
           php artisan view:clear
 
-      - name: Install PHPStan
-        run: composer require --dev phpstan/phpstan --no-interaction --no-progress
+      - name: Install PHP CodeSniffer
+        run: composer require --dev squizlabs/php_codesniffer --no-interaction --no-progress
       
-      - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyse --error-format=github
+      - name: Run PHP CodeSniffer
+        run: ./vendor/bin/phpcs --report=checkstyle --standard=PSR2 app/ > phpcs-report.xml
+      
+      - name: Upload PHPCS report
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpcs-report
+          path: phpcs-report.xml
