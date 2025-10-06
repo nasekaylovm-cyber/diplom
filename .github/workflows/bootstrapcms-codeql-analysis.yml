@@ -40,12 +40,13 @@ jobs:
       run: |
         rm -rf vendor
         rm -f composer.lock
+        rm -rf bootstrap/cache
 
     - name: Install dependencies
       run: |
         composer install \
-        --no-interaction \
-        --no-progress
+          --no-interaction \
+          --no-progress
 
     - name: Dump autoload
       run: composer dump-autoload
@@ -58,19 +59,11 @@ jobs:
         fi
 
     - name: Clear Laravel cache
-      run: php artisan clear-compiled
-
-    - name: Run Psalm
-      run: ./vendor/bin/psalm --show-info=false --output-format=github
-
-    - name: Upload Psalm report (optional)
-      uses: actions/upload-artifact@v4
-      with:
-        name: psalm-report
-        path: psalm.xml
-
-    - name: Clear Laravel cache
-      run: php artisan clear-compiled
+      run: |
+        php artisan config:clear
+        php artisan cache:clear
+        php artisan route:clear
+        php artisan view:clear
 
     - name: Run Psalm
       run: ./vendor/bin/psalm --show-info=false --output-format=github
