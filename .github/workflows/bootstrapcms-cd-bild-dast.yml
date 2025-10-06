@@ -1,0 +1,42 @@
+name: CD BILD_DEP_DAST
+
+on:
+  push:
+    branches: [ nasekaylovm-cyber-patch-5 ]
+  pull_request:
+    branches: [ nasekaylovm-cyber-patch-5 ]
+
+jobs:
+  build-and-test:
+    name: Build Docker Image and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image with verbose output
+      run: |
+        docker build \
+          --progress=plain \
+          --no-cache \
+          -t bootstrap-cms:latest .
+
+    - name: Run security scan on Docker image
+      run: |
+        trivy image --exit-code 0 --severity HIGH,CRITICAL --format sarif -o trivy-image-results.sarif bootstrap-cms:latest
+    - name: Upload Docker image scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-image-results.sarif'
+
+    - name: Run container tests
+      run: |
+        docker run -d --name test-cms -p 8080:80 bootstrap-cms:latest
+        sleep 30
+        curl -f http://localhost:8080 || exit 1
+        docker stop test-cms
+        docker rm test-cms
