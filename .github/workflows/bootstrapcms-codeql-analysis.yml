@@ -30,10 +30,16 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 7.4
+          tools: composer
+          
+      - name: Remove problematic composer.lock
+        run: rm -f composer.lock    
       - name: Install deps
         run: composer install --no-progress --no-suggest
+        
       - name: Run Psalm
-        run: ./vendor/bin/psalm --show-info=false
+        run: ./vendor/bin/psalm --show-info=false --output-format=github
+      
       - name: Upload Psalm report (optional)
         uses: actions/upload-artifact@v4
         with:
