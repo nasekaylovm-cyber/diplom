@@ -35,7 +35,10 @@ jobs:
 
       - name: Clear Composer Cache
         run: composer clear-cache
-
+      
+      - name: Remove vendor directory
+        run: rm -rf vendor
+      
       - name: Install dependencies
         run: composer install --no-interaction --no-progress
 
