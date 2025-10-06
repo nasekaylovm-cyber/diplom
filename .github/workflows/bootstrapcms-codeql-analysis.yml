@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -44,11 +44,30 @@ jobs:
     - name: Install dependencies
       run: |
         composer install \
-          --no-interaction \
-          --no-progress
+        --no-interaction \
+        --no-progress
 
     - name: Dump autoload
       run: composer dump-autoload
+
+    - name: Verify autoload file exists
+      run: |
+        if [ ! -f vendor/autoload.php ]; then
+          echo "Autoload file not found!"
+          exit 1
+        fi
+
+    - name: Clear Laravel cache
+      run: php artisan clear-compiled
+
+    - name: Run Psalm
+      run: ./vendor/bin/psalm --show-info=false --output-format=github
+
+    - name: Upload Psalm report (optional)
+      uses: actions/upload-artifact@v4
+      with:
+        name: psalm-report
+        path: psalm.xml
 
     - name: Clear Laravel cache
       run: php artisan clear-compiled
