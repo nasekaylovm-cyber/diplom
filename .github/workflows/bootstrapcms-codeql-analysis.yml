@@ -5,25 +5,68 @@ on:
     branches: ["main", "master"]
   pull_request:
     branches: ["main", "master"]
-  schedule:
-    - cron: '0 4 * * 0'  # еженедельно (UTC)
-  workflow_dispatch:
 
 jobs:
   codeql:
-    name: Analyze (CodeQL)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+      
+    - uses: actions/checkout@v4
+    - name: Init CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: javascript
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+    - name: Analyze
+      uses: github/codeql-action/analyze@v3
+      
+  php-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          languages: php
+          php-version: 7
+          tools: composer:v2
+          coverage: none
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+      - name: Clear Composer Cache
+        run: composer clear-cache
+      
+      - name: Remove vendor directory
+        run: rm -rf vendor
+      
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
 
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v2
+      - name: Dump autoload
+        run: composer dump-autoload
+      
+      - name: Verify autoload file exists
+        run: |
+          if [ ! -f vendor/autoload.php ]; then
+            echo "Autoload file not found!"
+            exit 1
+          fi
+
+      - name: Clear Laravel cache
+        run: |
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan route:clear
+          php artisan view:clear
+
+      - name: Install PHP CodeSniffer
+        run: composer require --dev squizlabs/php_codesniffer --no-interaction --no-progress
+      
+      - name: Run PHP CodeSniffer
+        run: ./vendor/bin/phpcs --report=checkstyle --standard=PSR2 app/ > phpcs-report.xml
+      
+      - name: Upload PHPCS report
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpcs-report
+          path: phpcs-report.xml
