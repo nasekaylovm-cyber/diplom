@@ -10,7 +10,7 @@ WORKDIR /var/www
 
 COPY composer.json ./
 
-RUN composer update --no-dev --no-interaction --no-scripts
+RUN composer install --no-interaction --prefer-dist || composer install --no-interaction --prefer-dist --ignore-platform-reqs
 
 COPY . .
 
